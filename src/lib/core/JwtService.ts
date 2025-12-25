@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { Secret, SignOptions } from "jsonwebtoken";
 import { AuthError } from "./ApiError";
 
 export interface JwtPayload {
@@ -7,18 +7,22 @@ export interface JwtPayload {
 }
 
 export class JwtService {
-  constructor(
-    private readonly secret: string,
-    private readonly expiresInSeconds: number = 900 
-  ) {}
+  private readonly secret: Secret;
+  private readonly signOptions: SignOptions;
+
+  constructor(secret: string, expiresInSeconds: number = 900) {
+    this.secret = secret;
+    this.signOptions = { expiresIn: expiresInSeconds };
+  }
 
   sign(payload: JwtPayload): string {
-    return jwt.sign(payload, this.secret, { expiresIn: this.expiresInSeconds });
+    return jwt.sign({ ...payload }, this.secret, this.signOptions);
   }
 
   verify(token: string): JwtPayload {
     try {
-      return jwt.verify(token, this.secret) as JwtPayload;
+      const decoded = jwt.verify(token, this.secret) as JwtPayload;
+      return { userId: decoded.userId, email: decoded.email };
     } catch {
       throw new AuthError("Invalid or expired token");
     }
